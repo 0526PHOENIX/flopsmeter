@@ -54,7 +54,7 @@ if __name__ == '__main__':
         print()
         print(name)
 
-        # Create Calculator With Dummy Input (C, H, W)
+        # Initialize calculator with dummy input shape (C, H, W)
         calculator = Complexity_Calculator(model, dummy = (3, 224, 224), device = torch.device('cuda'))
 
         # Print Complexity Report

@@ -5,26 +5,30 @@ build-backend = "setuptools.build_meta"
 [project]   
 name = "flopsmeter"
 version = "0.1.0"
-description = "FLOPs Calculator for PyTorch Deep Learning Model"
+description = "FLOPs & Complexity Calculator for PyTorch Deep Learning Model"
 requires-python = ">=3.10"
 readme = "README.md"
-license = {file = "LICENSE"}
+license = {text = "MIT"}
 
 authors = [
     {name = "Fan Chu Hsu", email = "0526phoenix@gmail.com"},
 ]
 
 dependencies = [
-    "torch>=2.2.1,<3.0.0",
+    "torch>=2.2.1",
+    "numpy>=1.26.4",
 ]
 
 keywords = [
-    "pytorch", "cnn", "flops"
+    "pytorch", "cnn", "flops", "complexity", "model-analysis", "deep-learning"
 ]
 
 classifiers = [
     "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.10"
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 [project.urls]
@@ -33,4 +37,5 @@ Documentation = "https://github.com/0526PHOENIX/flopsmeter/blob/master/README.md
 Repository = "https://github.com/0526PHOENIX/flopsmeter.git"
 
 [tool.setuptools.packages.find]
-where = ["flopsmeter"]
+where = ["."]
+include = ["flopsmeter"]

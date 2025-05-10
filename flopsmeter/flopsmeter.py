@@ -26,10 +26,23 @@ class Complexity_Calculator():
     Initialization
     ====================================================================================================================
     """
-    def __init__(self, model: Module, dummy: tuple[int, int, int], device: torch.device = None) -> None:
+    def __init__(self, model: Module, dummy: tuple[int], device: torch.device = None) -> None:
 
-        # Device: CPU or GPU
-        self.device = device or torch.device('cpu')
+        # Device
+        if device.type == 'cuda':
+            if torch.cuda.is_available():
+                # GPU
+                self.device = device
+            else:
+                # Warning
+                print()
+                print('WARNING !!! No GPU Found, Falling Back to CPU !!!')
+                print()
+                # CPU
+                self.device = torch.device('cpu')
+        else:
+            # CPU
+            self.device = torch.device('cpu')
     
         # Model and Dummy Input
         self.model = model.to(self.device)
@@ -411,8 +424,9 @@ class Complexity_Calculator():
         for _ in range(100):
             self.model(*dummy)
 
-        # Synchronize the GPU Operation
-        torch.cuda.synchronize()
+        # Synchronize GPU Operation if CUDA is Available
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
 
         # Start Time
         time_start = time.time()
@@ -433,7 +447,7 @@ class Complexity_Calculator():
         # Activations
         actvs = self.actvs
 
-        # Memory Cost
+        # Memory Usage
         data_size = torch.tensor([], dtype = next(self.model.parameters()).dtype).element_size()
         memory = int((actvs * 2 * data_size * batch_size) / (1024 ** 2))
 

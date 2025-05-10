@@ -1,52 +1,104 @@
-# FLOPs Calculator for PyTorch Deep Learning Model
+# FLOPs & Complexity Calculator for PyTorch Deep Learning Model
 
-A lightweight Python utility for estimating the computational complexity of PyTorch models. It hooks into a model's forward pass to count floating point operations (FLOPs), activations, memory usage, frames per second (FPS), and trainable parameters.
+A lightweight Python utility for estimating the computational complexity of PyTorch models. It hooks into a model's forward pass to count floating point operations (FLOPs), number of activations, memory usage, frames per second (FPS), and trainable parameters.
 
----
 
 ## Package Overview
 
-* **Name:** `Complexity_Calculator`
+* **Name:** `flopsmeter`
+
 * **Language:** Python 3.10+
+
 * **Dependencies:**
 
   * `torch 2.2.1+` (PyTorch)
 
 This package helps deep learning practitioners quickly gauge the computational cost of their PyTorch models, aiding in model optimization, benchmarking, and resource planning.
 
----
 
 ## Features
 
-* **Automatic FLOPs Counting**: Estimates operations for convolution, normalization, activation, pooling, and more.
-* **Activation Tracking**: Records total number of activations per forward pass.
-* **Memory Footprint**: Computes approximate GPU/CPU memory usage (MB) during inference.
-* **FPS Measurement**: Reports frames per second for batch inference.
-* **Parameter Counting**: Displays total number of trainable parameters.
-* **Module Exclusion Warning**: Alerts if any layer types are not implemented (may lead to underestimation).
+* **FLOPs Estimation** — Supports convolution, normalization, pooling, activation, and more.
 
----
+* **Activation Count** — Measures total activations produced in a forward pass.
+
+* **Memory Usage** — Estimates memory footprint (in MB) during training.
+
+* **FPS (Frames per Second)** — Benchmarks inference speed.
+
+* **Trainable Parameters** — Calculates total learnable weights.
+
+* **Module Exclusion Alerts** — Warns if unsupported layers are skipped.
+
+
+## Supported Layers
+
+The following PyTorch layers are currently supported by `flopsmeter`:
+
+### Convolution
+- `nn.Conv1d`, `nn.Conv2d`, `nn.Conv3d`
+- `nn.ConvTranspose1d`, `nn.ConvTranspose2d`, `nn.ConvTranspose3d`
+- `nn.LazyConv1d`, `nn.LazyConv2d`, `nn.LazyConv3d`
+- `nn.LazyConvTranspose1d`, `nn.LazyConvTranspose2d`, `nn.LazyConvTranspose3d`
+
+### Normalization
+- `nn.BatchNorm1d`, `nn.BatchNorm2d`, `nn.BatchNorm3d`
+- `nn.LazyBatchNorm1d`, `nn.LazyBatchNorm2d`, `nn.LazyBatchNorm3d`
+- `nn.SyncBatchNorm`
+- `nn.InstanceNorm1d`, `nn.InstanceNorm2d`, `nn.InstanceNorm3d`
+- `nn.LazyInstanceNorm1d`, `nn.LazyInstanceNorm2d`, `nn.LazyInstanceNorm3d`
+- `nn.GroupNorm`, `nn.LayerNorm`, `nn.LocalResponseNorm`
+
+### Activation (approximate FLOPs)
+- `nn.ELU`, `nn.ReLU`, `nn.ReLU6`, `nn.LeakyReLU`, `nn.PReLU`, `nn.RReLU`, `nn.GELU`, `nn.SELU`
+- `nn.Tanh`, `nn.Tanhshrink`, `nn.Hardtanh`, `nn.Sigmoid`, `nn.LogSigmoid`, `nn.SiLU`, `nn.Mish`, `nn.Hardswish`
+- `nn.Softplus`, `nn.Softshrink`, `nn.Softsign`, `nn.Hardsigmoid`, `nn.Hardshrink`, `nn.Threshold`
+- `nn.GLU`, `nn.Softmin`, `nn.Softmax`, `nn.Softmax2d`, `nn.LogSoftmax`, `nn.AdaptiveLogSoftmaxWithLoss`
+
+### Pooling
+- `nn.MaxPool1d`, `nn.MaxPool2d`, `nn.MaxPool3d`
+- `nn.AvgPool1d`, `nn.AvgPool2d`, `nn.AvgPool3d`
+- `nn.FractionalMaxPool2d`, `nn.FractionalMaxPool3d`
+- `nn.AdaptiveMaxPool1d`, `nn.AdaptiveMaxPool2d`, `nn.AdaptiveMaxPool3d`
+- `nn.AdaptiveAvgPool1d`, `nn.AdaptiveAvgPool2d`, `nn.AdaptiveAvgPool3d`
+- `nn.LPPool1d`, `nn.LPPool2d`
+
+### Fully Connected
+- `nn.Linear`, `nn.LazyLinear`, `nn.Bilinear`
+
+### Dropout
+- `nn.Dropout`, `nn.Dropout1d`, `nn.Dropout2d`, `nn.Dropout3d`
+- `nn.AlphaDropout`, `nn.FeatureAlphaDropout`
+
+### Upsampling
+- `nn.Upsample` with `mode`: `nearest`, `linear`, `bilinear`, `bicubic`, `trilinear`
+- `nn.UpsamplingNearest2d`, `nn.UpsamplingBilinear2d`
+
+### Padding and Others
+- `nn.Identity`, `nn.Flatten`, `nn.PixelShuffle`, `nn.PixelUnshuffle`
+- `nn.ChannelShuffle`, `nn.ZeroPad*`, `nn.ConstantPad*`, `nn.ReflectionPad*`, `nn.ReplicationPad*`, `nn.CircularPad*`
+
+*More layers may be supported in the future.*
+
+Note: Unsupported layers will be ignored during FLOPs calculation.
+
 
 ## Installation
 
 Install via pip:
 
 ```bash
-pip install torch         # if not already installed
-# Clone or download this repository, then:
-cd path/to/repo
-torch setup.py install    # or add to your project directly
+pip install flopsmeter
 ```
 
 *(Alternatively, copy the **`Complexity_Calculator`** class file into your project.)*
 
----
 
 ## Quick Start
 
 ```python
 import torch
-import torch.nn
+import torch.nn as nn
 
 from flopsmeter import Complexity_Calculator
 
@@ -63,21 +115,22 @@ class SimpleCNN(nn.Module):
         x = self.relu(self.bn(self.conv(x)))
         return x
 
-# Create Calculator With Dummy Input (C, H, W)
+# Initialize calculator with dummy input shape (C, H, W)
 calculator = Complexity_Calculator(model = SimpleCNN(), dummy = (3, 224, 224), device = torch.device('cuda'))
 
 # Print Complexity Report
 calculator.log(order = 'G', num_input = 1, batch_size = 16)
 ```
 
----
 
 ## API Reference
 
 ### `Complexity_Calculator(model, dummy, device = None)`
 
 * **model** (`torch.nn.Module`): Your PyTorch model.
-* **dummy** (`tuple[int, int, int]`): Shape of single input tensor (channels, height, width) or (sequence length, feature dims) for 1D.
+
+* **dummy** (`tuple[int]`): Input tensor shape for a *single sample*. For 2D input: `(C, H, W)`; for 3D: `(D, C, H, W)`; for 1D: `(L, D)`.
+
 * **device** (`torch.device`, optional): Computation device (`'cpu'` or `'cuda'`). Defaults to CPU.
 
 ### `calculator.log(order = 'G', num_input = 1, batch_size = 16)`
@@ -85,10 +138,12 @@ calculator.log(order = 'G', num_input = 1, batch_size = 16)
 Generate and print a detailed report:
 
 * **order** (`Literal['G','M','k']`): Scale for FLOPs (`G`iga, `M`ega, `k`ilo).
-* **num\_input** (`int`): Number of dummy inputs to simulate concurrent inputs.
-* **batch\_size** (`int`): Batch size for memory estimation.
 
-**Output Log**:
+* **num\_input** (`int`): How many inputs to simulate concurrently (for multi-input models).
+
+* **batch\_size** (`int`): Size of the input batch used to estimate memory.
+
+**Result Log**:
 
 ```
 -----------------------------------------------------------------------------------------------
@@ -109,6 +164,10 @@ Generate and print a detailed report:
 
 * **Params**: Total number of trainable parameters in the model.
 
+**Warning Log**:
+
+A warning will be printed if any modules are skipped in FLOPs estimation. For example:
+
 ```
 ***********************************************************************************************
 Warning !! Above Estimations Ignore Following Modules !! The FLOPs Would be Underestimated !!
@@ -119,23 +178,26 @@ Warning !! Above Estimations Ignore Following Modules !! The FLOPs Would be Unde
 
 A warning block prints any unsupported modules that were excluded from FLOPs calculation.
 
----
 
 ## Internals
 
 1. **Hook Registration**: Recursively attaches forward hooks to all submodules.
+
 2. **FLOPs Computation**: Implements formulas for convolutions, normalization, pooling, activations, etc.
+
 3. **Warm-up & Timing**: Runs 100 warm-up passes, then times 100 forward passes for stable metrics.
+
 4. **Memory Estimation**: Based on activation count and tensor element size.
 
----
 
 ## Notes
 
-* Unsupported modules are recorded in `exclude`—you may need to extend formulas for custom layers.
-* Assumes activations fit in available GPU memory; external context (optimizer states) not considered.
+* This tool is **currently focused on CNN-based models for computer vision**. Transformer-based models (e.g., Vision Transformers, Swin Transformers) are not yet supported in FLOPs estimation.
 
----
+* Unsupported modules are recorded in `exclude`—you may need to extend formulas for custom layers.
+
+* Memory estimation is rough and assumes no activation checkpointing or optimizer states.
+
 
 ## License
 
